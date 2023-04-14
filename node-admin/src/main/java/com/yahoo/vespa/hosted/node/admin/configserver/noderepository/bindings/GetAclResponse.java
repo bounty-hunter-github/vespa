@@ -13,19 +13,7 @@ import java.util.List;
  * @author mpolden
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GetAclResponse {
-
-    @JsonProperty("trustedNodes")
-    public final List<Node> trustedNodes;
-
-    @JsonProperty("trustedNetworks")
-    public final List<Network> trustedNetworks;
-
-    @JsonProperty("trustedPorts")
-    public final List<Port> trustedPorts;
-
-    @JsonProperty("trustedUdpPorts")
-    public final List<Port> trustedUdpPorts;
+public record GetAclResponse(List<Node> trustedNodes, List<Network> trustedNetworks, List<Port> trustedPorts, List<Port> trustedUdpPorts) {
 
     @JsonCreator
     public GetAclResponse(@JsonProperty("trustedNodes") List<Node> trustedNodes,
@@ -39,22 +27,7 @@ public class GetAclResponse {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Node {
-
-        @JsonProperty("hostname")
-        public final String hostname;
-
-        @JsonProperty("type")
-        public final String nodeType;
-
-        @JsonProperty("ipAddress")
-        public final String ipAddress;
-
-        @JsonProperty("ports")
-        public final List<Integer> ports;
-
-        @JsonProperty("trustedBy")
-        public final String trustedBy;
+    public record Node(String hostname, String nodeType, String ipAddress, List<Integer> ports, String trustedBy) {
 
         @JsonCreator
         public Node(@JsonProperty("hostname") String hostname, @JsonProperty("type") String nodeType,
@@ -66,49 +39,11 @@ public class GetAclResponse {
             this.ports = ports == null ? List.of() : List.copyOf(ports);
             this.trustedBy = trustedBy;
         }
-
-        public String getTrustedBy() {
-            return trustedBy;
-        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Network {
-
-        @JsonProperty("network")
-        public final String network;
-
-        @JsonProperty("trustedBy")
-        public final String trustedBy;
-
-        @JsonCreator
-        public Network(@JsonProperty("network") String network, @JsonProperty("trustedBy") String trustedBy) {
-            this.network = network;
-            this.trustedBy = trustedBy;
-        }
-
-        public String getTrustedBy() {
-            return trustedBy;
-        }
-    }
+    public record Network(@JsonProperty("network") String network, @JsonProperty("trustedBy") String trustedBy) { }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Port {
-
-        @JsonProperty("port")
-        public final Integer port;
-
-        @JsonProperty("trustedBy")
-        public final String trustedBy;
-
-        @JsonCreator
-        public Port(@JsonProperty("port") Integer port, @JsonProperty("trustedBy") String trustedBy) {
-            this.port = port;
-            this.trustedBy = trustedBy;
-        }
-
-        public String getTrustedBy() {
-            return trustedBy;
-        }
-    }
+    public record Port(@JsonProperty("port") Integer port, @JsonProperty("trustedBy") String trustedBy) { }
 }

@@ -43,7 +43,7 @@ public class HealthResponseTest {
 
         HealthResponse response = deserialize(jsonResponse);
 
-        assertEquals(response.status.code, "up");
+        assertEquals(response.status().code(), "up");
     }
 
     private static HealthResponse deserialize(String json) throws Exception {

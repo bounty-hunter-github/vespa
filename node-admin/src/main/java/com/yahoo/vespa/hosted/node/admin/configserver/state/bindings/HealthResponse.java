@@ -10,27 +10,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author hakon
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class HealthResponse {
-    @JsonProperty("status")
-    public Status status = new Status();
+public record HealthResponse(@JsonProperty("status") Status status) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Status {
-        @JsonProperty("code")
-        public String code = "down";
-
-        @Override
-        public String toString() {
-            return "Status{" +
-                    "code='" + code + '\'' +
-                    '}';
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "HealthResponse{" +
-                "status=" + status +
-                '}';
-    }
+    public record Status(@JsonProperty("code") String code) { }
 }

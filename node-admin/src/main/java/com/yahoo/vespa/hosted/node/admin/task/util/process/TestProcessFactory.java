@@ -10,16 +10,7 @@ import java.util.function.Function;
  * @author hakonhall
  */
 public class TestProcessFactory implements ProcessFactory {
-    private static class SpawnCall {
-        private final String commandDescription;
-        private final Function<CommandLine, ChildProcess2> callback;
-
-        private SpawnCall(String commandDescription,
-                          Function<CommandLine, ChildProcess2> callback) {
-            this.commandDescription = commandDescription;
-            this.callback = callback;
-        }
-    }
+    private record SpawnCall(String commandDescription, Function<CommandLine, ChildProcess2> callback) { }
     private final List<SpawnCall> expectedSpawnCalls = new ArrayList<>();
     private final List<CommandLine> spawnCommandLines = new ArrayList<>();
 

@@ -40,12 +40,7 @@ public class CoredumpCleanupRule {
     }
 
     /** Assigns MEDIUM priority to the oldest, unprocessed coredump and HIGHEST for the remaining */
-    private static class ContainerCoredumpCleanupRule implements DiskCleanupRule {
-        private final Path containerCrashPath;
-
-        private ContainerCoredumpCleanupRule(Path containerCrashPath) {
-            this.containerCrashPath = containerCrashPath;
-        }
+    private record ContainerCoredumpCleanupRule(Path containerCrashPath) implements DiskCleanupRule {
 
         @Override
         public Collection<PrioritizedFileAttributes> prioritize() {
@@ -59,12 +54,7 @@ public class CoredumpCleanupRule {
     }
 
     /** Assigns MEDIUM priority to the first coredump of the day for each container, HIGH for the remaining */
-    private static class HostCoredumpCleanupRule implements DiskCleanupRule {
-        private final Path processedCoredumpsPath;
-
-        private HostCoredumpCleanupRule(Path processedCoredumpsPath) {
-            this.processedCoredumpsPath = processedCoredumpsPath;
-        }
+    private record HostCoredumpCleanupRule(Path processedCoredumpsPath) implements DiskCleanupRule {
 
         @Override
         public Collection<PrioritizedFileAttributes> prioritize() {

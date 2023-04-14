@@ -9,10 +9,7 @@ import java.util.Objects;
  *
  * @author mpolden
  */
-public class Image {
-
-    private final String id;
-    private final List<String> names;
+public record Image(String id, List<String> names) {
 
     public Image(String id, List<String> names) {
         this.id = Objects.requireNonNull(id);
@@ -27,19 +24,6 @@ public class Image {
     /** Names for this image, such as tags or digests */
     public List<String> names() {
         return names;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Image image = (Image) o;
-        return id.equals(image.id) && names.equals(image.names);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, names);
     }
 
     @Override

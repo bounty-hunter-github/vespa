@@ -144,116 +144,37 @@ public class NodeRepositoryNode {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Owner {
-        @JsonProperty("tenant")
-        public String tenant;
-        @JsonProperty("application")
-        public String application;
-        @JsonProperty("instance")
-        public String instance;
-
-        public String toString() {
-            return "Owner {" +
-                    " tenant = " + tenant +
-                    " application = " + application +
-                    " instance = " + instance +
-                    " }";
-        }
-    }
+    public record Owner(@JsonProperty("tenant") String tenant,
+                        @JsonProperty("application") String application,
+                        @JsonProperty("instance") String instance) { }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Membership {
-        @JsonProperty("clustertype")
-        public String clusterType;
-        @JsonProperty("clusterid")
-        public String clusterId;
-        @JsonProperty("group")
-        public String group;
-        @JsonProperty("index")
-        public int index;
-        @JsonProperty("retired")
-        public boolean retired;
-
-        @Override
-        public String toString() {
-            return "Membership {" +
-                    " clusterType = " + clusterType +
-                    " clusterId = " + clusterId +
-                    " group = " + group +
-                    " index = " + index +
-                    " retired = " + retired +
-                    " }";
-        }
-    }
+    public record Membership(@JsonProperty("clustertype") String clusterType,
+                             @JsonProperty("clusterid") String clusterId,
+                             @JsonProperty("group") String group,
+                             @JsonProperty("index") int index,
+                             @JsonProperty("retired") boolean retired) { }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class NodeResources {
-        @JsonProperty
-        public Double vcpu;
-        @JsonProperty
-        public Double memoryGb;
-        @JsonProperty
-        public Double diskGb;
-        @JsonProperty
-        public Double bandwidthGbps;
-        @JsonProperty
-        public String diskSpeed;
-        @JsonProperty
-        public String storageType;
-        @JsonProperty
-        public String architecture;
-        @JsonProperty
-        public Integer gpuCount;
-        @JsonProperty
-        public Double gpuMemoryGb;
-
-        @Override
-        public String toString() {
-            return "NodeResources{" +
-                   "vcpu=" + vcpu +
-                   ", memoryGb=" + memoryGb +
-                   ", diskGb=" + diskGb +
-                   ", bandwidthGbps=" + bandwidthGbps +
-                   ", diskSpeed='" + diskSpeed + '\'' +
-                   ", storageType='" + storageType + '\'' +
-                   ", architecture='" + architecture + '\'' +
-                   ", gpuCount=" + gpuCount +
-                   ", gpuMemoryGb=" + gpuMemoryGb +
-                   '}';
-        }
-    }
+    public record NodeResources(@JsonProperty("vcpu") Double vcpu,
+                                @JsonProperty("memoryGb") Double memoryGb,
+                                @JsonProperty("diskGb") Double diskGb,
+                                @JsonProperty("bandwidthGbps") Double bandwidthGbps,
+                                @JsonProperty("diskSpeed") String diskSpeed,
+                                @JsonProperty("storageType") String storageType,
+                                @JsonProperty("architecture") String architecture,
+                                @JsonProperty("gpuCount") Integer gpuCount,
+                                @JsonProperty("gpuMemoryGb") Double gpuMemoryGb) { }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class Event {
-        @JsonProperty
-        public String event;
-        @JsonProperty
-        public String agent;
-        @JsonProperty
-        public Long at;
+    public record Event(@JsonProperty("event") String event,
+                        @JsonProperty("agent") String agent,
+                        @JsonProperty("at") Long at) { }
 
-        @Override
-        public String toString() {
-            return "Event{" +
-                    "agent=" + agent +
-                    ", event=" + event +
-                    ", at=" + at +
-                    '}';
-        }
-    }
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class TrustStoreItem {
-        @JsonProperty ("fingerprint")
-        public String fingerprint;
-        @JsonProperty ("expiry")
-        public long expiry;
-
-        public TrustStoreItem(@JsonProperty("fingerprint") String fingerprint, @JsonProperty("expiry") long expiry) {
-            this.fingerprint = fingerprint;
-            this.expiry = expiry;
-        }
-    }
+    public record TrustStoreItem(@JsonProperty("fingerprint") String fingerprint,
+                                 @JsonProperty("expiry") long expiry) { }
 }

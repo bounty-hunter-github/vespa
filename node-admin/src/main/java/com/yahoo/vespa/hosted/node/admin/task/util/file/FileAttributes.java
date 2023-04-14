@@ -13,33 +13,8 @@ import java.util.Set;
  *
  * @author hakonhall
  */
-public class FileAttributes {
-
-    private final Instant lastModifiedTime;
-    private final int ownerId;
-    private final int groupId;
-    private final String permissions;
-    private final boolean isRegularFile;
-    private final boolean isDirectory;
-    private final long size;
-
-    public FileAttributes(Instant lastModifiedTime, int ownerId, int groupId, String permissions, boolean isRegularFile, boolean isDirectory, long size) {
-        this.lastModifiedTime = lastModifiedTime;
-        this.ownerId = ownerId;
-        this.groupId = groupId;
-        this.permissions = permissions;
-        this.isRegularFile = isRegularFile;
-        this.isDirectory = isDirectory;
-        this.size = size;
-    }
-
-    public Instant lastModifiedTime() { return lastModifiedTime; }
-    public int ownerId() { return ownerId; }
-    public int groupId() { return groupId; }
-    public String permissions() { return permissions; }
-    public boolean isRegularFile() { return isRegularFile; }
-    public boolean isDirectory() { return isDirectory; }
-    public long size() { return size; }
+public record FileAttributes(Instant lastModifiedTime, int ownerId, int groupId, String permissions,
+                             boolean isRegularFile, boolean isDirectory, long size) {
 
     @SuppressWarnings("unchecked")
     static FileAttributes fromAttributes(Map<String, Object> attributes) {

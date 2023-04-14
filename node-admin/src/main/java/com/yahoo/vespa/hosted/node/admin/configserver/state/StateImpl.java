@@ -20,7 +20,7 @@ public class StateImpl implements State {
     public HealthCode getHealth() {
         try {
             HealthResponse response = configServerApi.get("/state/v1/health", HealthResponse.class);
-            return HealthCode.fromString(response.status.code);
+            return HealthCode.fromString(response.status().code());
         } catch (ConnectionException | HttpException e) {
             return HealthCode.DOWN;
         }

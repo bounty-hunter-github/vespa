@@ -25,57 +25,19 @@ import static com.yahoo.config.provision.NodeResources.DiskSpeed.slow;
 /**
  * @author stiankri
  */
-public class NodeSpec {
-
-    private final String hostname;
-    private final String id;
-    private final NodeState state;
-    private final NodeType type;
-    private final CloudAccount cloudAccount;
-    private final String flavor;
-
-    private final Optional<DockerImage> wantedDockerImage;
-    private final Optional<DockerImage> currentDockerImage;
-
-    private final Optional<Version> wantedVespaVersion;
-    private final Optional<Version> currentVespaVersion;
-
-    private final Optional<Version> wantedOsVersion;
-    private final Optional<Version> currentOsVersion;
-
-    private final Optional<Long> wantedRestartGeneration;
-    private final Optional<Long> currentRestartGeneration;
-
-    private final long wantedRebootGeneration;
-    private final long currentRebootGeneration;
-
-    private final Optional<Instant> wantedFirmwareCheck;
-    private final Optional<Instant> currentFirmwareCheck;
-
-    private final Optional<String> modelName;
-
-    private final OrchestratorStatus orchestratorStatus;
-    private final Optional<ApplicationId> owner;
-    private final Optional<NodeMembership> membership;
-
-    private final NodeResources resources;
-    private final NodeResources realResources;
-    private final Set<String> ipAddresses;
-    private final Set<String> additionalIpAddresses;
-
-    private final NodeReports reports;
-    private final List<Event> events;
-
-    private final Optional<String> parentHostname;
-    private final Optional<URI> archiveUri;
-
-    private final Optional<ApplicationId> exclusiveTo;
-
-    private final List<TrustStoreItem> trustStore;
-
-    private final Optional<WireguardKey> wireguardPubkey;
-
-    private final boolean wantToRebuild;
+public record NodeSpec(String hostname, String id, Optional<DockerImage> wantedDockerImage,
+                       Optional<DockerImage> currentDockerImage, NodeState state, NodeType type,
+                       CloudAccount cloudAccount, String flavor, Optional<Version> wantedVespaVersion,
+                       Optional<Version> currentVespaVersion, Optional<Version> wantedOsVersion,
+                       Optional<Version> currentOsVersion, OrchestratorStatus orchestratorStatus,
+                       Optional<ApplicationId> owner, Optional<NodeMembership> membership,
+                       Optional<Long> wantedRestartGeneration, Optional<Long> currentRestartGeneration,
+                       long wantedRebootGeneration, long currentRebootGeneration, Optional<Instant> wantedFirmwareCheck,
+                       Optional<Instant> currentFirmwareCheck, Optional<String> modelName, NodeResources resources,
+                       NodeResources realResources, Set<String> ipAddresses, Set<String> additionalIpAddresses,
+                       NodeReports reports, List<Event> events, Optional<String> parentHostname,
+                       Optional<URI> archiveUri, Optional<ApplicationId> exclusiveTo, List<TrustStoreItem> trustStore,
+                       Optional<WireguardKey> wireguardPubkey, boolean wantToRebuild) {
 
     public NodeSpec(
             String hostname,
@@ -158,103 +120,6 @@ public class NodeSpec {
         this.wantToRebuild = wantToRebuild;
     }
 
-    public String hostname() {
-        return hostname;
-    }
-
-    /** Returns unique node ID */
-    public String id() {
-        return id;
-    }
-
-    public NodeState state() {
-        return state;
-    }
-
-    public NodeType type() {
-        return type;
-    }
-
-    public CloudAccount cloudAccount() {
-        return cloudAccount;
-    }
-
-    public String flavor() {
-        return flavor;
-    }
-
-    public Optional<DockerImage> wantedDockerImage() {
-        return wantedDockerImage;
-    }
-
-    public Optional<DockerImage> currentDockerImage() {
-        return currentDockerImage;
-    }
-
-    public Optional<Version> wantedVespaVersion() {
-        return wantedVespaVersion;
-    }
-
-    public Optional<Version> currentVespaVersion() {
-        return currentVespaVersion;
-    }
-
-    public Optional<Version> currentOsVersion() {
-        return currentOsVersion;
-    }
-
-    public Optional<Version> wantedOsVersion() {
-        return wantedOsVersion;
-    }
-
-    public Optional<Long> wantedRestartGeneration() {
-        return wantedRestartGeneration;
-    }
-
-    public Optional<Long> currentRestartGeneration() {
-        return currentRestartGeneration;
-    }
-
-    public long wantedRebootGeneration() {
-        return wantedRebootGeneration;
-    }
-
-    public long currentRebootGeneration() {
-        return currentRebootGeneration;
-    }
-
-    public Optional<Instant> wantedFirmwareCheck() {
-        return wantedFirmwareCheck;
-    }
-
-    public Optional<Instant> currentFirmwareCheck() {
-        return currentFirmwareCheck;
-    }
-
-    public Optional<String> modelName() {
-        return modelName;
-    }
-
-    public OrchestratorStatus orchestratorStatus() {
-        return orchestratorStatus;
-    }
-
-    public Optional<ApplicationId> owner() {
-        return owner;
-    }
-
-    public Optional<NodeMembership> membership() {
-        return membership;
-    }
-
-    public NodeResources resources() {
-        return resources;
-    }
-
-    public NodeResources realResources() {
-        return realResources;
-    }
-
     public double vcpu() {
         return realResources.vcpu();
     }
@@ -277,162 +142,6 @@ public class NodeSpec {
 
     public double bandwidthGbps() {
         return realResources.bandwidthGbps();
-    }
-
-    public Set<String> ipAddresses() {
-        return ipAddresses;
-    }
-
-    public Set<String> additionalIpAddresses() {
-        return additionalIpAddresses;
-    }
-
-    public NodeReports reports() { return reports; }
-
-    public List<Event> events() {
-        return events;
-    }
-
-    public Optional<String> parentHostname() {
-        return parentHostname;
-    }
-
-    public Optional<URI> archiveUri() {
-        return archiveUri;
-    }
-
-    public Optional<ApplicationId> exclusiveTo() {
-        return exclusiveTo;
-    }
-
-    public List<TrustStoreItem> trustStore() {
-        return trustStore;
-    }
-
-    public Optional<WireguardKey> wireguardPubkey() { return wireguardPubkey; }
-
-    public boolean wantToRebuild() {
-        return wantToRebuild;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NodeSpec that)) return false;
-
-        return Objects.equals(hostname, that.hostname) &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(wantedDockerImage, that.wantedDockerImage) &&
-                Objects.equals(currentDockerImage, that.currentDockerImage) &&
-                Objects.equals(state, that.state) &&
-                Objects.equals(type, that.type) &&
-                Objects.equals(cloudAccount, that.cloudAccount) &&
-                Objects.equals(flavor, that.flavor) &&
-                Objects.equals(modelName, that.modelName) &&
-                Objects.equals(wantedVespaVersion, that.wantedVespaVersion) &&
-                Objects.equals(currentVespaVersion, that.currentVespaVersion) &&
-                Objects.equals(wantedOsVersion, that.wantedOsVersion) &&
-                Objects.equals(currentOsVersion, that.currentOsVersion) &&
-                Objects.equals(orchestratorStatus, that.orchestratorStatus) &&
-                Objects.equals(owner, that.owner) &&
-                Objects.equals(membership, that.membership) &&
-                Objects.equals(wantedRestartGeneration, that.wantedRestartGeneration) &&
-                Objects.equals(currentRestartGeneration, that.currentRestartGeneration) &&
-                Objects.equals(wantedRebootGeneration, that.wantedRebootGeneration) &&
-                Objects.equals(currentRebootGeneration, that.currentRebootGeneration) &&
-                Objects.equals(wantedFirmwareCheck, that.wantedFirmwareCheck) &&
-                Objects.equals(currentFirmwareCheck, that.currentFirmwareCheck) &&
-                Objects.equals(resources, that.resources) &&
-                Objects.equals(realResources, that.realResources) &&
-                Objects.equals(ipAddresses, that.ipAddresses) &&
-                Objects.equals(additionalIpAddresses, that.additionalIpAddresses) &&
-                Objects.equals(reports, that.reports) &&
-                Objects.equals(events, that.events) &&
-                Objects.equals(parentHostname, that.parentHostname) &&
-                Objects.equals(archiveUri, that.archiveUri) &&
-                Objects.equals(exclusiveTo, that.exclusiveTo) &&
-                Objects.equals(trustStore, that.trustStore) &&
-                Objects.equals(wireguardPubkey, that.wireguardPubkey) &&
-                Objects.equals(wantToRebuild, that.wantToRebuild);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-                hostname,
-                id,
-                wantedDockerImage,
-                currentDockerImage,
-                state,
-                type,
-                cloudAccount,
-                flavor,
-                modelName,
-                wantedVespaVersion,
-                currentVespaVersion,
-                wantedOsVersion,
-                currentOsVersion,
-                orchestratorStatus,
-                owner,
-                membership,
-                wantedRestartGeneration,
-                currentRestartGeneration,
-                wantedRebootGeneration,
-                currentRebootGeneration,
-                wantedFirmwareCheck,
-                currentFirmwareCheck,
-                resources,
-                realResources,
-                ipAddresses,
-                additionalIpAddresses,
-                reports,
-                events,
-                parentHostname,
-                archiveUri,
-                exclusiveTo,
-                trustStore,
-                wireguardPubkey,
-                wantToRebuild);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + " {"
-                + " hostname=" + hostname
-                + " id=" + id
-                + " wantedDockerImage=" + wantedDockerImage
-                + " currentDockerImage=" + currentDockerImage
-                + " state=" + state
-                + " type=" + type
-                + " cloudAccount=" + cloudAccount
-                + " flavor=" + flavor
-                + " modelName=" + modelName
-                + " wantedVespaVersion=" + wantedVespaVersion
-                + " currentVespaVersion=" + currentVespaVersion
-                + " wantedOsVersion=" + wantedOsVersion
-                + " currentOsVersion=" + currentOsVersion
-                + " orchestratorStatus=" + orchestratorStatus
-                + " owner=" + owner
-                + " membership=" + membership
-                + " wantedRestartGeneration=" + wantedRestartGeneration
-                + " currentRestartGeneration=" + currentRestartGeneration
-                + " wantedRebootGeneration=" + wantedRebootGeneration
-                + " currentRebootGeneration=" + currentRebootGeneration
-                + " wantedFirmwareCheck=" + wantedFirmwareCheck
-                + " currentFirmwareCheck=" + currentFirmwareCheck
-                + " resources=" + resources
-                + " realResources=" + realResources
-                + " ipAddresses=" + ipAddresses
-                + " additionalIpAddresses=" + additionalIpAddresses
-                + " reports=" + reports
-                + " events=" + events
-                + " parentHostname=" + parentHostname
-                + " archiveUri=" + archiveUri
-                + " exclusiveTo=" + exclusiveTo
-                + " trustStore=" + trustStore
-                + " wireguardPubkey=" + wireguardPubkey
-                + " wantToRebuild=" + wantToRebuild
-                + " }";
     }
 
     public static class Builder {

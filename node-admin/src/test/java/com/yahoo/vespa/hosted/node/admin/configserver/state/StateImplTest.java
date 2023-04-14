@@ -19,8 +19,7 @@ public class StateImplTest {
 
     @Test
     void testWhenUp() {
-        HealthResponse response = new HealthResponse();
-        response.status.code = "up";
+        HealthResponse response = new HealthResponse(new HealthResponse.Status("up"));
         when(api.get(any(), any())).thenReturn(response);
 
         HealthCode code = state.getHealth();

@@ -58,8 +58,7 @@ class CoresTest {
 
     @Test
     void reportOK() {
-        var oKResponse = new StandardConfigServerResponse();
-        oKResponse.message = "OK";
+        var oKResponse = new StandardConfigServerResponse("OK", null);
         when(configServerApi.post(any(), any(), any())).thenReturn(oKResponse);
 
         cores.report(hostname, id, metadata);
@@ -98,9 +97,7 @@ class CoresTest {
 
     @Test
     void reportFails() {
-        var response = new StandardConfigServerResponse();
-        response.errorCode = "503";
-        response.message = "error detail";
+        var response = new StandardConfigServerResponse("error detail", "503");
         when(configServerApi.post(any(), any(), any())).thenReturn(response);
 
         assertThrows(ConfigServerException.class,

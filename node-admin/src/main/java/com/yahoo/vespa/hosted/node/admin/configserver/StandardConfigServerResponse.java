@@ -11,10 +11,7 @@ import com.google.common.base.Strings;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StandardConfigServerResponse {
-    @JsonProperty("message") public String message;
-    @JsonProperty("error-code") public String errorCode;
-
+public record StandardConfigServerResponse(@JsonProperty("message") String message, @JsonProperty("error-code") String errorCode) {
     public void throwOnError(String detail) {
         if (!Strings.isNullOrEmpty(errorCode))
             throw new ConfigServerException(detail + ": " + message + " " + errorCode);

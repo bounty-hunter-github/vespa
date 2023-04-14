@@ -13,9 +13,7 @@ import java.util.List;
  * usable by any module, by not depending itself on any module-specific classes.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GetNodesResponse {
-
-    public final List<NodeRepositoryNode> nodes;
+public record GetNodesResponse(List<NodeRepositoryNode> nodes) {
 
     @JsonCreator
     public GetNodesResponse(@JsonProperty("nodes") List<NodeRepositoryNode> nodes) {
