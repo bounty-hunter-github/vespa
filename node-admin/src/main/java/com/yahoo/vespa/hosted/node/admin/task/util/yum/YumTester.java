@@ -5,7 +5,6 @@ import com.yahoo.vespa.hosted.node.admin.task.util.process.TestChildProcess2;
 import com.yahoo.vespa.hosted.node.admin.task.util.process.TestTerminal;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**

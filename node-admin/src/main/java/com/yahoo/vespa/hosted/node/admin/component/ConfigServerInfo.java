@@ -6,7 +6,6 @@ import com.yahoo.vespa.athenz.api.AthenzIdentity;
 import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Information necessary to e.g. establish communication with the config servers

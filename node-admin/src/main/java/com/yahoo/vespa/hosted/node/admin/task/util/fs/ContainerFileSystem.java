@@ -3,7 +3,6 @@ package com.yahoo.vespa.hosted.node.admin.task.util.fs;
 
 import com.yahoo.vespa.hosted.node.admin.nodeagent.UserScope;
 
-import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;

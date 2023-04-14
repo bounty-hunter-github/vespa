@@ -12,7 +12,6 @@ import com.yahoo.vespa.hosted.node.admin.task.util.network.IPVersion;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
