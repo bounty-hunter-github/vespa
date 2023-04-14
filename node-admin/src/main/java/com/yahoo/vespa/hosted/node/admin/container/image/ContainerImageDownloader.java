@@ -46,8 +46,9 @@ public class ContainerImageDownloader {
         executorService.submit(() -> {
             try {
                 containerEngine.pullImage(context, image, registryCredentials);
+                context.log(LOG, "Container image " + image + " download completed");
             } catch (RuntimeException e) {
-                LOG.log(Level.SEVERE, "Failed to download container image " + image, e);
+                context.log(LOG, Level.SEVERE, "Failed to download container image " + image, e);
             } finally {
                 pendingDownloads.remove(image);
             }

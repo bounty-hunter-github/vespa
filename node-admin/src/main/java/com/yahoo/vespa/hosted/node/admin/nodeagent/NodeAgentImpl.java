@@ -612,7 +612,7 @@ public class NodeAgentImpl implements NodeAgent {
                 aclMaintainer.ifPresent(maintainer -> maintainer.converge(context));
                 wireguardTasks.forEach(task -> getContainer(context).ifPresent(c -> task.converge(context, c.id())));
             } catch (RuntimeException suppressed) {
-                logger.log(Level.WARNING, "Suppressing ACL update failure: " + suppressed);
+                context.log(logger, Level.WARNING, "Suppressing ACL update failure: " + suppressed);
                 e.addSuppressed(suppressed);
             }
 

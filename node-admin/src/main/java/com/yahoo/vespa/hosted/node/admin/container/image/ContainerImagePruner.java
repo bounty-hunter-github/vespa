@@ -103,7 +103,7 @@ public class ContainerImagePruner {
         imagesToRemove.forEach(image -> {
             // Deleting an image by image ID with multiple tags will fail -> delete by tags instead
                     referencesOf(image).forEach(imageReference -> {
-                        LOG.info("Deleting unused image " + imageReference);
+                        context.log(LOG, "Deleting unused image " + imageReference);
                         containerEngine.removeImage(context, imageReference);
                     });
                     lastTimeUsedByImageId.remove(image.id());
