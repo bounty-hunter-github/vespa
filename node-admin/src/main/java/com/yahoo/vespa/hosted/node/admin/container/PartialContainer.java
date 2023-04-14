@@ -120,18 +120,18 @@ public class PartialContainer {
         }
 
         public static Container.State from(String state) {
-            switch (state) {
-                case "unknown": return unknown;
-                case "configured": return configured;
-                case "created": return created;
-                case "running": return running;
-                case "stopped": return stopped;
-                case "paused": return paused;
-                case "exited": return exited;
-                case "removing": return removing;
-                case "stopping": return stopping;
-            }
-            throw new IllegalArgumentException("Invalid state '" + state + "'");
+            return switch (state) {
+                case "unknown" -> unknown;
+                case "configured" -> configured;
+                case "created" -> created;
+                case "running" -> running;
+                case "stopped" -> stopped;
+                case "paused" -> paused;
+                case "exited" -> exited;
+                case "removing" -> removing;
+                case "stopping" -> stopping;
+                default -> throw new IllegalArgumentException("Invalid state '" + state + "'");
+            };
         }
 
     }

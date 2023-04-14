@@ -175,7 +175,7 @@ public class VespaServiceDumperImpl implements VespaServiceDumper {
 
     static String createDumpId(ServiceDumpReport request) {
         String sanitizedConfigId = Lowercase.toLowerCase(request.configId()).replaceAll("[^a-z_0-9]", "-");
-        return sanitizedConfigId + "-" + request.getCreatedMillisOrNull().toString();
+        return sanitizedConfigId + "-" + request.getCreatedMillisOrNull();
     }
 
     private static URI serviceDumpDestination(NodeSpec spec, String dumpId) {

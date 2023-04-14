@@ -129,7 +129,7 @@ public class CommandLine {
      * is given to the program to shut down. Again, the defaults should be reasonable.
      */
     public CommandResult execute() {
-        taskContext.recordSystemModification(logger, "Executing command: " + toString());
+        taskContext.recordSystemModification(logger, "Executing command: " + this);
         return doExecute();
     }
 
@@ -157,7 +157,7 @@ public class CommandLine {
         // to executeSilently().
         executeSilentlyCalled = false;
 
-        taskContext.recordSystemModification(logger, "Executed command: " + toString());
+        taskContext.recordSystemModification(logger, "Executed command: " + this);
     }
 
     /**

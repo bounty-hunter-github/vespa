@@ -74,7 +74,6 @@ public class YumTester extends Yum {
                 case deleteVersionLock, installFixed, install -> execute("Nothing to do");
                 case upgrade -> execute("No packages marked for update");
                 case remove -> execute("No Packages marked for removal");
-                default -> throw new IllegalArgumentException("Unknown command type: " + commandType);
             };
         }
 

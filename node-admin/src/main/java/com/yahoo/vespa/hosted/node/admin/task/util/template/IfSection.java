@@ -47,9 +47,8 @@ class IfSection extends Section {
         boolean condition = negated ? !value : value;
         if (condition) {
             ifSections.sections().forEach(section -> section.appendTo(buffer));
-        } else if (elseSections.isPresent()) {
-            elseSections.get().sections().forEach(section -> section.appendTo(buffer));
-        }
+        } else
+            elseSections.ifPresent(sectionList -> sectionList.sections().forEach(section -> section.appendTo(buffer)));
     }
 
     @Override
