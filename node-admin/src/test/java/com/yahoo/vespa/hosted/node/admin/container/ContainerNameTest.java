@@ -14,14 +14,14 @@ public class ContainerNameTest {
     void testAlphanumericalContainerName() {
         String name = "container123";
         ContainerName containerName = new ContainerName(name);
-        assertEquals(containerName.asString(), name);
+        assertEquals(containerName.value(), name);
     }
 
     @Test
     void testAlphanumericalWithDashContainerName() {
         String name = "container-123";
         ContainerName containerName = new ContainerName(name);
-        assertEquals(containerName.asString(), name);
+        assertEquals(containerName.value(), name);
     }
 
     @Test

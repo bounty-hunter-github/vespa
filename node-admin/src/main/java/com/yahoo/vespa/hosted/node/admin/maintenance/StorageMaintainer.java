@@ -176,7 +176,7 @@ public class StorageMaintainer {
     public void archiveNodeStorage(NodeAgentContext context) {
         ContainerPath logsDirInContainer = context.paths().underVespaHome("logs");
         Path containerLogsInArchiveDir = archiveContainerStoragePath
-                .resolve(context.containerName().asString() + "_" + DATE_TIME_FORMATTER.format(timer.currentTime()) + logsDirInContainer.pathInContainer());
+                .resolve(context.containerName().value() + "_" + DATE_TIME_FORMATTER.format(timer.currentTime()) + logsDirInContainer.pathInContainer());
 
         // Files.move() does not support moving non-empty directories across providers, move using host paths
         UnixPath containerLogsOnHost = new UnixPath(logsDirInContainer.pathOnHost());

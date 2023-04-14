@@ -47,7 +47,7 @@ public class ContainerStatsCollectorTest {
     @Test
     void collect() throws Exception {
         ContainerStatsCollector collector = new ContainerStatsCollector(containerEngine, cgroup, fileSystem, 24);
-        ContainerId containerId = new ContainerId("id1");
+        ContainerId containerId = new ContainerId("abcdef234");
         int containerPid = 42;
         assertTrue(collector.collect(context, containerId, containerPid, "eth0").isEmpty(), "No stats found");
 

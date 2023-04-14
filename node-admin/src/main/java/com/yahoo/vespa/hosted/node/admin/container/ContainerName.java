@@ -1,7 +1,8 @@
 // Copyright Yahoo. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
 package com.yahoo.vespa.hosted.node.admin.container;
 
-import java.util.Objects;
+import ai.vespa.validation.PatternedStringWrapper;
+
 import java.util.regex.Pattern;
 
 /**
@@ -9,51 +10,16 @@ import java.util.regex.Pattern;
  *
  * @author bakksjo
  */
-public class ContainerName implements Comparable<ContainerName> {
+public class ContainerName extends PatternedStringWrapper<ContainerName> {
 
-    private static final Pattern LEGAL_CONTAINER_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
-    private final String name;
+    private static final Pattern CONTAINER_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
 
-    public ContainerName(final String name) {
-        this.name = Objects.requireNonNull(name);
-        if (! LEGAL_CONTAINER_NAME_PATTERN.matcher(name).matches()) {
-            throw new IllegalArgumentException("Illegal container name: " + name + ". Must match " +
-                    LEGAL_CONTAINER_NAME_PATTERN.pattern());
-        }
+    public ContainerName(String name) {
+        super(name, CONTAINER_NAME_PATTERN, "container name");
     }
 
-    public String asString() {
-        return name;
-    }
-
-    public static ContainerName fromHostname(final String hostName) {
+    public static ContainerName fromHostname(String hostName) {
         return new ContainerName(hostName.split("\\.", 2)[0]);
-    }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ContainerName other)) {
-            return false;
-        }
-
-        return Objects.equals(name, other.name);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + " {"
-                + " name=" + name
-                + " }";
-    }
-
-    @Override
-    public int compareTo(ContainerName o) {
-        return name.compareTo(o.name);
     }
 
 }

@@ -208,7 +208,7 @@ public class ContainerEngineMock implements ContainerEngine {
     }
 
     public Container createContainer(NodeAgentContext context, PartialContainer.State state, ContainerResources containerResources) {
-        return new Container(new ContainerId("id-of-" + context.containerName()),
+        return new Container(new ContainerId(Integer.toHexString(context.containerName().hashCode())),
                              context.containerName(),
                              Instant.EPOCH,
                              state,

@@ -62,7 +62,7 @@ public class ContainerOperationsTest {
     }
 
     private Container createContainer(String name, boolean managed) {
-        return new Container(new ContainerId("id-of-" + name), new ContainerName(name), Instant.EPOCH, PartialContainer.State.running,
+        return new Container(new ContainerId(Integer.toHexString(name.hashCode())), new ContainerName(name), Instant.EPOCH, PartialContainer.State.running,
                              "image-id", DockerImage.EMPTY, Map.of(), 42, 43, name,
                              ContainerResources.UNLIMITED, List.of(), managed);
     }

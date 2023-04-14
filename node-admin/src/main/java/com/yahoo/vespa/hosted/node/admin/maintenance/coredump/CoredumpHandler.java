@@ -201,7 +201,7 @@ public class CoredumpHandler {
         }
         new FileDeleter(coreFile).converge(context);
 
-        Path newCoredumpDirectory = doneCoredumpsPath.resolve(context.containerName().asString());
+        Path newCoredumpDirectory = doneCoredumpsPath.resolve(context.containerName().value());
         new MakeDirectory(newCoredumpDirectory).createParents().converge(context);
         // Files.move() does not support moving non-empty directories across providers, move using host paths
         new FileMover(coredumpDirectory.pathOnHost(), newCoredumpDirectory.resolve(coredumpDirectory.getFileName().toString()))
@@ -235,7 +235,7 @@ public class CoredumpHandler {
         metrics.declareGauge(Metrics.APPLICATION_NODE, "coredumps.enqueued", dimensions, Metrics.DimensionType.PRETAGGED).sample(numberOfUnprocessedCoredumps);
 
         // Processed coredumps
-        Path processedCoredumpsPath = doneCoredumpsPath.resolve(context.containerName().asString());
+        Path processedCoredumpsPath = doneCoredumpsPath.resolve(context.containerName().value());
         int numberOfProcessedCoredumps = FileFinder.directories(processedCoredumpsPath)
                 .maxDepth(1)
                 .list().size();
@@ -311,7 +311,7 @@ public class CoredumpHandler {
         CoreDumpMetadata metadata = coreCollector.collect(context, coreDumpFile);
         metadata.setCpuMicrocodeVersion(getMicrocodeVersion())
                 .setKernelVersion(System.getProperty("os.version"))
-                .setCoreDumpPath(doneCoredumpsPath.resolve(context.containerName().asString())
+                .setCoreDumpPath(doneCoredumpsPath.resolve(context.containerName().value())
                                                   .resolve(coreDumpDirectory.getFileName().toString())
                                                   .resolve(coreDumpFile.getFileName().toString()));
 

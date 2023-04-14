@@ -120,7 +120,7 @@ public class ContainerImagePrunerTest {
     }
 
     private static Container container(String name, String imageId) {
-        return new Container(new ContainerId("id-of-" + name), new ContainerName(name), Instant.EPOCH,
+        return new Container(new ContainerId(Integer.toHexString(name.hashCode())), new ContainerName(name), Instant.EPOCH,
                              Container.State.running, imageId, DockerImage.EMPTY, Map.of(),
                              42, 43, name + ".example.com", ContainerResources.UNLIMITED,
                              List.of(), true);

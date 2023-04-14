@@ -2,35 +2,20 @@
 //
 package com.yahoo.vespa.hosted.node.admin.container;
 
-import java.util.Objects;
+import ai.vespa.validation.PatternedStringWrapper;
+
+import java.util.regex.Pattern;
 
 /**
  * The ID of a container.
  *
  * @author hakon
  */
-public class ContainerId {
-    private final String id;
+public class ContainerId extends PatternedStringWrapper<ContainerId> {
+    private static final Pattern CONTAINER_ID_PATTERN = Pattern.compile("^[0-9a-f]+$");
 
     public ContainerId(String id) {
-        this.id = Objects.requireNonNull(id, "id cannot be null");
+        super(id, CONTAINER_ID_PATTERN, "container id");
     }
 
-    @Override
-    public String toString() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ContainerId that = (ContainerId) o;
-        return id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
 }
