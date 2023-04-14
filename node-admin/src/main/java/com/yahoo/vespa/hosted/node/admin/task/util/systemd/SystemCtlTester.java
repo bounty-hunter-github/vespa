@@ -51,7 +51,7 @@ public class SystemCtlTester extends SystemCtl {
     }
 
     private void expectCommand(String command, int exitCode, String output) {
-        terminal.expectCommand((useSudo() ? "sudo " : "") + command, exitCode, output);
+        terminal.expectCommand(command, exitCode, output);
     }
 
     private Expectation forChangeEnabledState(String unit, boolean enable) {

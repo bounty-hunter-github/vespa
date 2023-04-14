@@ -26,7 +26,6 @@ public class SystemCtl {
     private static final Pattern ACTIVE_STATE_PROPERTY_PATTERN = createPropertyPattern("ActiveState");
 
     private final Terminal terminal;
-    private boolean useSudo = false;
 
     private static Pattern createPropertyPattern(String propertyName) {
         if (!PROPERTY_NAME_PATTERN.matcher(propertyName).matches()) {
@@ -41,17 +40,6 @@ public class SystemCtl {
 
     public SystemCtl(Terminal terminal) {
         this.terminal = terminal;
-    }
-
-    /** Call all commands through sudo */
-    public SystemCtl withSudo() {
-        this.useSudo = true;
-        return this;
-    }
-
-    /** Returns whether this is configured to use sudo */
-    public boolean useSudo() {
-        return useSudo;
     }
 
     public void daemonReload(TaskContext taskContext) {
@@ -96,11 +84,7 @@ public class SystemCtl {
     }
 
     private CommandLine newCommandLine(TaskContext context) {
-        var commandLine = terminal.newCommandLine(context);
-        if (useSudo) {
-            commandLine.add("sudo");
-        }
-        return commandLine;
+        return terminal.newCommandLine(context);
     }
 
     public class SystemCtlEnable extends SystemCtlCommand {
