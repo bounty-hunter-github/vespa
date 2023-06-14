@@ -130,6 +130,8 @@ func (a *Client) Authenticate(request *http.Request) error {
 	}
 	if request.Header == nil {
 		request.Header = make(http.Header)
+	} else {
+		request.Header = request.Header.Clone()
 	}
 	request.Header.Set("Authorization", "Bearer "+accessToken)
 	return nil

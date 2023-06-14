@@ -137,6 +137,8 @@ func (rs *RequestSigner) SignRequest(request *http.Request) error {
 	request.Body = io.NopCloser(body)
 	if request.Header == nil {
 		request.Header = make(http.Header)
+	} else {
+		request.Header = request.Header.Clone()
 	}
 	request.Header.Set("X-Timestamp", timestamp)
 	request.Header.Set("X-Content-Hash", contentHash)
