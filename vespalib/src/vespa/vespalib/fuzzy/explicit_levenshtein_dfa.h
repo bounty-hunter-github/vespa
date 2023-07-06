@@ -4,6 +4,7 @@
 #include "dfa_stepping_base.h"
 #include "levenshtein_dfa.h"
 #include "sparse_state.h"
+#include "unicode_utils.h"
 #include <vector>
 
 namespace vespalib::fuzzy {
@@ -27,6 +28,10 @@ struct DfaNode {
 
     [[nodiscard]] bool has_wildcard_edge() const noexcept {
         return wildcard_edge_to != DOOMED;
+    }
+
+    [[nodiscard]] uint32_t wildcard_edge_to_or_doomed() const noexcept {
+        return wildcard_edge_to;
     }
 
     [[nodiscard]] std::span<const Edge> match_out_edges() const noexcept {
@@ -115,11 +120,6 @@ public:
         _nodes[from_node_idx].set_wildcard_out_edge(to_node_idx);
     }
 
-    void emit_smallest_matching_suffix(const DfaNodeType& from, std::string& str) const;
-    void backtrack_and_emit_greater_suffix(const DfaNodeType* last_node_with_higher_out,
-                                           const uint32_t input_at_branch,
-                                           std::string& successor) const;
-
     [[nodiscard]] MatchResult match(std::string_view u8str, std::string* successor_out) const override;
 
     [[nodiscard]] size_t memory_usage() const noexcept override {
@@ -130,20 +130,8 @@ public:
 };
 
 template <typename Traits>
-class ExplicitLevenshteinDfaBuilder : public DfaSteppingBase<Traits> {
-    using Base = DfaSteppingBase<Traits>;
-
-    using StateType       = typename Base::StateType;
-    using TransitionsType = typename Base::TransitionsType;
-
-    using Base::_u32_str;
-    using Base::max_edits;
-    using Base::start;
-    using Base::match_edit_distance;
-    using Base::step;
-    using Base::is_match;
-    using Base::can_match;
-    using Base::transitions;
+class ExplicitLevenshteinDfaBuilder {
+    std::u32string _u32_str_buf;
 public:
     explicit ExplicitLevenshteinDfaBuilder(std::u8string_view str)
         : ExplicitLevenshteinDfaBuilder(utf8_string_to_utf32(str))
@@ -153,16 +141,9 @@ public:
         : ExplicitLevenshteinDfaBuilder(utf8_string_to_utf32(str))
     {}
 
-    ExplicitLevenshteinDfaBuilder(std::u32string str) noexcept
-        : DfaSteppingBase<Traits>(std::move(str))
-    {
-        assert(_u32_str.size() < UINT32_MAX / max_out_edges_per_node());
-    }
-
-    [[nodiscard]] static constexpr uint8_t max_out_edges_per_node() noexcept {
-        // Max possible out transition characters (2k+1) + one wildcard edge.
-        return diag(max_edits()) + 1;
-    }
+    explicit ExplicitLevenshteinDfaBuilder(std::u32string str) noexcept
+        : _u32_str_buf(std::move(str))
+    {}
 
     [[nodiscard]] LevenshteinDfa build_dfa() const;
 };

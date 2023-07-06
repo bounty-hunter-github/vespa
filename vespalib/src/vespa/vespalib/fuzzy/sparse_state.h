@@ -11,6 +11,9 @@
 
 namespace vespalib::fuzzy {
 
+// Sentinel U32 char for state stepping that cannot match any target string characters
+constexpr const uint32_t WILDCARD = UINT32_MAX;
+
 /**
  * diag(n) is the width of the diagonal of the cost matrix that can possibly be
  * within k edits. This means that for a fixed k, it suffices to maintain state
@@ -85,6 +88,17 @@ struct FixedSparseState {
     };
 };
 
+/**
+ * Prints sparse states as a single matrix row. Columns prior to any state index
+ * are printed explicitly as '-' characters to make states line up when printed.
+ *
+ * Example output for the state (2:1, 3:1):
+ *
+ *   [-, -, 1, 1]
+ *
+ * Only meant as a debugging aid during development, as states with high indices
+ * will emit very large strings.
+ */
 template <uint8_t MaxEdits> [[maybe_unused]]
 std::ostream& operator<<(std::ostream& os, const FixedSparseState<MaxEdits>& s) {
     os << "[";
@@ -112,7 +126,7 @@ struct FixedMaxEditsTransitions {
 
     constexpr FixedMaxEditsTransitions() noexcept : out_u32_chars(), size(0) {}
 
-    [[nodiscard]] bool has_char(uint32_t u32ch) const noexcept {
+    [[nodiscard]] constexpr bool has_char(uint32_t u32ch) const noexcept {
         for (uint8_t i = 0; i < size; ++i) {
             if (out_u32_chars[i] == u32ch) {
                 return true;
@@ -129,11 +143,11 @@ struct FixedMaxEditsTransitions {
         }
     }
 
-    std::span<const uint32_t> u32_chars() const noexcept {
+    constexpr std::span<const uint32_t> u32_chars() const noexcept {
         return {out_u32_chars.begin(), out_u32_chars.begin() + size};
     }
 
-    std::span<uint32_t> u32_chars() noexcept {
+    constexpr std::span<uint32_t> u32_chars() noexcept {
         return {out_u32_chars.begin(), out_u32_chars.begin() + size};
     }
 

@@ -4,7 +4,7 @@
 #include <vespa/vespalib/util/stringfmt.h>
 #include <stdexcept>
 
-namespace vespalib {
+namespace vespalib::fuzzy {
 
 std::u32string utf8_string_to_utf32(std::u8string_view u8str) {
     vespalib::stringref ch_str(reinterpret_cast<const char*>(u8str.data()), u8str.size());

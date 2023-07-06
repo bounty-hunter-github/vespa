@@ -2,8 +2,7 @@
 #pragma once
 
 #include "explicit_levenshtein_dfa.h"
-#include "unicode_utils.h"
-#include <vespa/vespalib/text/utf8.h>
+#include "match_algorithm.hpp"
 #include <vespa/vespalib/stllike/hash_map.h>
 #include <vespa/vespalib/stllike/hash_map.hpp>
 #include <iostream>
@@ -12,105 +11,80 @@
 namespace vespalib::fuzzy {
 
 template <uint8_t MaxEdits>
-void ExplicitLevenshteinDfaImpl<MaxEdits>::emit_smallest_matching_suffix(const DfaNodeType& from, std::string& str) const {
-    const auto* node = &from;
-    while (node->edits > max_edits()) {
-        // if we can take a wildcard path, emit the smallest possible valid utf-8 character (0x01)
-        // otherwise, find the smallest char that can eventually lead us to a match.
-        if (node->has_wildcard_edge()) {
-            str += '\x01';
-            assert(node->wildcard_edge_to < _nodes.size());
-            node = &_nodes[node->wildcard_edge_to];
+struct ExplicitDfaMatcher {
+    using DfaNodeType = typename ExplicitLevenshteinDfaImpl<MaxEdits>::DfaNodeType;
+    using StateType   = const DfaNodeType*;
+    using EdgeType    = const DfaNodeType::Edge*;
+
+    using StateParamType = const DfaNodeType*;
+
+    const std::vector<DfaNodeType>& _nodes;
+
+    explicit ExplicitDfaMatcher(const std::vector<DfaNodeType>& nodes) noexcept
+        : _nodes(nodes)
+    {}
+
+    static constexpr uint8_t max_edits() noexcept { return MaxEdits; }
+
+    StateType start() const noexcept {
+        return &_nodes[0];
+    }
+    bool has_higher_out_edge(StateType node, uint32_t mch) const noexcept {
+        return node->has_higher_out_edge(mch);
+    }
+    StateType match_input(StateType node, uint32_t mch) const noexcept {
+        auto maybe_node_idx = node->match_or_doomed(mch);
+        if (maybe_node_idx != DOOMED) {
+            assert(maybe_node_idx < _nodes.size());
+            return &_nodes[maybe_node_idx];
         } else {
-            assert(!node->match_out_edges().empty());
-            // Out-edges are pre-ordered in increasing code point order, so the first element
-            // is always the smallest possible matching character.
-            const auto& smallest_out = node->match_out_edges().front();
-            assert(smallest_out.node < _nodes.size());
-            append_utf32_char_as_utf8(str, smallest_out.u32ch);
-            node = &_nodes[smallest_out.node];
+            return nullptr;
         }
     }
-}
-
-/**
- * Instantly backtrack to the first possible branching point in the DFA where we can
- * choose some higher outgoing edge character value and still match the DFA. If the node
- * has a wildcard edge, we can bump the input char by one and generate the smallest
- * possible matching suffix to that. Otherwise, choose the smallest out edge that
- * is greater than the input character at that location and _then_ emit the smallest
- * matching prefix.
- *
- * precondition: `last_node_with_higher_out` has either a wildcard edge or a char match
- *    edge that compares greater than `input_at_branch`.
- */
-template <uint8_t MaxEdits>
-void ExplicitLevenshteinDfaImpl<MaxEdits>::backtrack_and_emit_greater_suffix(
-        const DfaNodeType* last_node_with_higher_out,
-        const uint32_t input_at_branch,
-        std::string& successor) const
-{
-    if (last_node_with_higher_out->has_wildcard_edge()) {
-        // `input_at_branch` may be U+10FFFF, with +1 being outside legal Unicode _code point_
-        // range but _within_ what UTF-8 can technically _encode_.
-        // We assume that successor-consumers do not care about anything except byte-wise ordering.
-        // This is similar to what RE2's PossibleMatchRange emits to represent a UTF-8 upper bound,
-        // so not without precedent.
-        const auto next_char = input_at_branch + 1;
-        if (!last_node_with_higher_out->has_exact_match(next_char)) {
-            append_utf32_char_as_utf8(successor, next_char);
-            emit_smallest_matching_suffix(_nodes[last_node_with_higher_out->wildcard_edge_to], successor);
-            return;
-        } // else: handle exact match below (it will be found as the first higher out edge)
+    bool is_match(StateType node) const noexcept {
+        return node->edits <= max_edits();
     }
-    const auto* first_highest = last_node_with_higher_out->lowest_higher_explicit_out_edge(input_at_branch);
-    assert(first_highest != nullptr);
-    append_utf32_char_as_utf8(successor, first_highest->u32ch);
-    emit_smallest_matching_suffix(_nodes[first_highest->node], successor);
-}
+    bool can_match(StateType node) const noexcept {
+        return node != nullptr;
+    }
+    uint8_t match_edit_distance(StateType node) const noexcept {
+        return node->edits;
+    }
+    bool valid_state(StateType node) const noexcept {
+        return node != nullptr;
+    }
+    StateType match_wildcard(StateType node) const noexcept {
+        auto edge_to = node->wildcard_edge_to_or_doomed();
+        return ((edge_to != DOOMED) ? &_nodes[edge_to] : nullptr);
+    }
+    bool has_exact_match(StateType node, uint32_t ch) const noexcept {
+        return node->has_exact_match(ch);
+    }
+    EdgeType lowest_higher_explicit_out_edge(StateType node, uint32_t ch) const noexcept {
+        return node->lowest_higher_explicit_out_edge(ch);
+    }
+    EdgeType smallest_out_edge(StateType node) const noexcept {
+        // Out-edges are pre-ordered in increasing code point order, so the first
+        // element is always the smallest possible matching character.
+        assert(!node->match_out_edges().empty());
+        return &node->match_out_edges().front();
+    }
+    bool valid_edge(EdgeType edge) const noexcept {
+        return edge != nullptr;
+    }
+    uint32_t edge_to_u32char(EdgeType edge) const noexcept {
+        return edge->u32ch;
+    }
+    StateType edge_to_state([[maybe_unused]] StateType node, EdgeType edge) const noexcept {
+        return &_nodes[edge->node];
+    }
+};
 
 template <uint8_t MaxEdits>
 LevenshteinDfa::MatchResult
 ExplicitLevenshteinDfaImpl<MaxEdits>::match(std::string_view u8str, std::string* successor_out) const {
-    vespalib::Utf8Reader u8_reader(u8str.data(), u8str.size());
-    const DfaNodeType* node = &_nodes[0];
-    const DfaNodeType* last_node_with_higher_out = nullptr;
-    uint32_t n_prefix_u8_bytes = 0;
-    uint32_t char_after_prefix = 0;
-    while (u8_reader.hasMore()) {
-        const auto u8_pos_before_char = u8_reader.getPos();
-        const uint32_t mch = u8_reader.getChar();
-        if (node->has_higher_out_edge(mch)) {
-            last_node_with_higher_out = node;
-            n_prefix_u8_bytes = u8_pos_before_char;
-            char_after_prefix = mch;
-        }
-        auto maybe_next = node->match_or_doomed(mch);
-        if (maybe_next != DOOMED) {
-            assert(maybe_next < _nodes.size());
-            node = &_nodes[maybe_next];
-        } else {
-            // Can never match; find the successor if requested
-            if (successor_out) {
-                *successor_out = u8str.substr(0, n_prefix_u8_bytes);
-                assert(last_node_with_higher_out != nullptr);
-                backtrack_and_emit_greater_suffix(last_node_with_higher_out, char_after_prefix, *successor_out);
-            }
-            return MatchResult::make_mismatch(max_edits());
-        }
-    }
-    if (node->edits <= max_edits()) {
-        return MatchResult::make_match(max_edits(), node->edits);
-    }
-    // we've matched the entire input string without ending in an accepting state. This can only
-    // happen if the input is a (possibly edited) prefix of the target string. Any and all _longer_
-    // strings with this prefix is inherently lexicographically greater, so emit the smallest
-    // possible suffix that turns prefix || suffix into a matching string.
-    if (successor_out) {
-        *successor_out = u8str;
-        emit_smallest_matching_suffix(*node, *successor_out);
-    }
-    return MatchResult::make_mismatch(max_edits());
+    ExplicitDfaMatcher<MaxEdits> matcher(_nodes);
+    return MatchAlgorithm<MaxEdits>::match(matcher, u8str, successor_out);
 }
 
 template <uint8_t MaxEdits>
@@ -178,10 +152,38 @@ ExploreState<StateType>::ExploreState()
 template <typename StateType>
 ExploreState<StateType>::~ExploreState() = default;
 
-} // anon ns
+template <typename Traits>
+class ExplicitLevenshteinDfaBuilderImpl : public DfaSteppingBase<Traits> {
+    using Base = DfaSteppingBase<Traits>;
+
+    using StateType       = typename Base::StateType;
+    using TransitionsType = typename Base::TransitionsType;
+
+    using Base::_u32_str;
+    using Base::max_edits;
+    using Base::start;
+    using Base::match_edit_distance;
+    using Base::step;
+    using Base::is_match;
+    using Base::can_match;
+    using Base::transitions;
+public:
+    explicit ExplicitLevenshteinDfaBuilderImpl(std::u32string_view str) noexcept
+        : DfaSteppingBase<Traits>(str)
+    {
+        assert(str.size() < UINT32_MAX / max_out_edges_per_node());
+    }
+
+    [[nodiscard]] static constexpr uint8_t max_out_edges_per_node() noexcept {
+        // Max possible out transition characters (2k+1) + one wildcard edge.
+        return diag(max_edits()) + 1;
+    }
+
+    [[nodiscard]] LevenshteinDfa build_dfa() const;
+};
 
 template <typename Traits>
-LevenshteinDfa ExplicitLevenshteinDfaBuilder<Traits>::build_dfa() const {
+LevenshteinDfa ExplicitLevenshteinDfaBuilderImpl<Traits>::build_dfa() const {
     auto dfa = std::make_unique<ExplicitLevenshteinDfaImpl<max_edits()>>();
     ExploreState<StateType> exp;
     // Use BFS instead of DFS to ensure most node edges point to nodes that are allocated _after_
@@ -208,7 +210,7 @@ LevenshteinDfa ExplicitLevenshteinDfaBuilder<Traits>::build_dfa() const {
             dfa->add_outgoing_edge(this_node_idx, out_node->second.first, out_c);
             to_explore.push(std::move(new_state));
         }
-        auto wildcard_state = step(state, UINT32_MAX); // never-matching sentinel
+        auto wildcard_state = step(state, WILDCARD);
         if (can_match(wildcard_state)) {
             auto out_node = exp.node_of(wildcard_state);
             dfa->set_wildcard_edge(this_node_idx, out_node->second.first);
@@ -216,6 +218,14 @@ LevenshteinDfa ExplicitLevenshteinDfaBuilder<Traits>::build_dfa() const {
         } // else: don't bother
     }
     return LevenshteinDfa(std::move(dfa));
+}
+
+} // anon ns
+
+template <typename Traits>
+LevenshteinDfa ExplicitLevenshteinDfaBuilder<Traits>::build_dfa() const {
+    ExplicitLevenshteinDfaBuilderImpl<Traits> builder(_u32_str_buf);
+    return builder.build_dfa();
 }
 
 }

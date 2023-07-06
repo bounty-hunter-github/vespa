@@ -2,7 +2,6 @@
 #pragma once
 
 #include "sparse_state.h"
-#include "unicode_utils.h"
 
 namespace vespalib::fuzzy {
 
@@ -11,18 +10,10 @@ struct DfaSteppingBase {
     using StateType       = Traits::StateType;
     using TransitionsType = Traits::TransitionsType;
 
-    std::u32string _u32_str;
+    std::u32string_view _u32_str; // Note: a _view_, not owned.
 
-    explicit DfaSteppingBase(std::u8string_view str)
-        : DfaSteppingBase(utf8_string_to_utf32(str))
-    {}
-
-    explicit DfaSteppingBase(std::string_view str)
-        : DfaSteppingBase(utf8_string_to_utf32(str))
-    {}
-
-    DfaSteppingBase(std::u32string str) noexcept
-        : _u32_str(std::move(str))
+    DfaSteppingBase(std::u32string_view str) noexcept
+        : _u32_str(str)
     {
     }
 

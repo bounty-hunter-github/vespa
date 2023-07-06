@@ -169,7 +169,7 @@ public:
      *     _matching_ string S so that there exists no other matching string S' that is
      *     greater than `source` but smaller than S.
      *   - `successor_out` contains UTF-8 bytes that are within what UTF-8 can legally
-     *     encode in bitwise form, but, but the code points they encode may not be valid.
+     *     encode in bitwise form, but the _code points_ they encode may not be valid.
      *     In particular, surrogate pair ranges and U+10FFFF+1 may be encoded, neither of
      *     which are valid UTF-8.
      *

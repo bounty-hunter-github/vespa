@@ -1,6 +1,7 @@
 // Copyright Yahoo. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
 #include <vespa/vespalib/fuzzy/levenshtein_dfa.h>
 #include <vespa/vespalib/fuzzy/dfa_stepping_base.h>
+#include <vespa/vespalib/fuzzy/unicode_utils.h>
 #include <concepts>
 #include <string>
 #include <string_view>
@@ -234,7 +235,7 @@ template <uint8_t MaxEdits>
 void explore(const DfaSteppingBase<FixedMaxEditDistanceTraits<MaxEdits>>& stepper,
              const typename DfaSteppingBase<FixedMaxEditDistanceTraits<MaxEdits>>::StateType& in_state)
 {
-    ASSERT_EQ(stepper.can_match(stepper.step(in_state, UINT32_MAX)),
+    ASSERT_EQ(stepper.can_match(stepper.step(in_state, WILDCARD)),
               stepper.can_wildcard_step(in_state));
     if (!stepper.can_match(in_state)) {
         return; // reached the end of the line
@@ -244,7 +245,7 @@ void explore(const DfaSteppingBase<FixedMaxEditDistanceTraits<MaxEdits>>& steppe
     for (uint32_t c: t.u32_chars()) {
         ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.step(in_state, c)));
     }
-    ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.step(in_state, UINT32_MAX)));
+    ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.step(in_state, WILDCARD)));
 }
 
 } // anon ns
@@ -261,7 +262,8 @@ TYPED_TEST_SUITE(LevenshteinSparseStateTest, StateStepperTypes);
 
 TYPED_TEST(LevenshteinSparseStateTest, wildcard_step_predcate_is_equivalent_to_step_with_can_match) {
     for (const char* target : {"", "a", "ab", "abc", "aaaa"}) {
-        TypeParam stepper(target);
+        auto u32_target = utf8_string_to_utf32(target);
+        TypeParam stepper(u32_target);
         ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.start()));
     }
 }

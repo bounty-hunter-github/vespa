@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-namespace vespalib {
+namespace vespalib::fuzzy {
 
 std::u32string utf8_string_to_utf32(std::u8string_view u8str);
 
