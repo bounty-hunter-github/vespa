@@ -143,6 +143,7 @@ class ExplicitLevenshteinDfaBuilder : public DfaSteppingBase<Traits> {
     using Base::step;
     using Base::is_match;
     using Base::can_match;
+    using Base::transitions;
 public:
     explicit ExplicitLevenshteinDfaBuilder(std::u8string_view str)
         : ExplicitLevenshteinDfaBuilder(utf8_string_to_utf32(str))
@@ -157,10 +158,6 @@ public:
     {
         assert(_u32_str.size() < UINT32_MAX / max_out_edges_per_node());
     }
-
-    // All valid character transitions from this state are those that are reachable
-    // within the max edit distance.
-    [[nodiscard]] TransitionsType transitions(const StateType& state) const;
 
     [[nodiscard]] static constexpr uint8_t max_out_edges_per_node() noexcept {
         // Max possible out transition characters (2k+1) + one wildcard edge.

@@ -1,13 +1,13 @@
 // Copyright Yahoo. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
 #include <vespa/vespalib/fuzzy/levenshtein_dfa.h>
+#include <vespa/vespalib/fuzzy/dfa_stepping_base.h>
 #include <concepts>
 #include <string>
 #include <string_view>
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 
 using namespace ::testing;
-using vespalib::fuzzy::LevenshteinDfa;
+using namespace vespalib::fuzzy;
 
 struct LevenshteinDfaTest : TestWithParam<LevenshteinDfa::DfaType> {
 
@@ -143,6 +143,13 @@ TEST_P(LevenshteinDfaTest, successor_is_well_defined_for_max_unicode_code_point_
                             "\xf4\x90\x80\x80""food");// U+10FFFF+1
 }
 
+TEST_P(LevenshteinDfaTest, successor_is_well_defined_for_empty_target) {
+    auto dfa = LevenshteinDfa::build("", 1, dfa_type());
+    test_dfa_successor(dfa, "aa",    "b");
+    test_dfa_successor(dfa, "b\x01", "c");
+    test_dfa_successor(dfa, "vespa", "w");
+}
+
 // We should normally be able to rely on higher-level components to ensure we
 // only receive valid UTF-8, but make sure we don't choke on it if we do get it.
 TEST_P(LevenshteinDfaTest, malformed_utf8_is_replaced_with_placeholder_char) {
@@ -218,6 +225,44 @@ TEST_P(LevenshteinDfaSuccessorTest, exhaustive_successor_test) {
                 skip_to = successor;
             }
         }
+    }
+}
+
+namespace {
+
+template <uint8_t MaxEdits>
+void explore(const DfaSteppingBase<FixedMaxEditDistanceTraits<MaxEdits>>& stepper,
+             const typename DfaSteppingBase<FixedMaxEditDistanceTraits<MaxEdits>>::StateType& in_state)
+{
+    ASSERT_EQ(stepper.can_match(stepper.step(in_state, UINT32_MAX)),
+              stepper.can_wildcard_step(in_state));
+    if (!stepper.can_match(in_state)) {
+        return; // reached the end of the line
+    }
+    // DFS-explore all matching transitions, as well as one non-matching transition
+    auto t = stepper.transitions(in_state);
+    for (uint32_t c: t.u32_chars()) {
+        ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.step(in_state, c)));
+    }
+    ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.step(in_state, UINT32_MAX)));
+}
+
+} // anon ns
+
+using StateStepperTypes = Types<
+    DfaSteppingBase<FixedMaxEditDistanceTraits<1>>,
+    DfaSteppingBase<FixedMaxEditDistanceTraits<2>>
+>;
+
+template <typename SteppingBase>
+struct LevenshteinSparseStateTest : Test {};
+
+TYPED_TEST_SUITE(LevenshteinSparseStateTest, StateStepperTypes);
+
+TYPED_TEST(LevenshteinSparseStateTest, wildcard_step_predcate_is_equivalent_to_step_with_can_match) {
+    for (const char* target : {"", "a", "ab", "abc", "aaaa"}) {
+        TypeParam stepper(target);
+        ASSERT_NO_FATAL_FAILURE(explore(stepper, stepper.start()));
     }
 }
 

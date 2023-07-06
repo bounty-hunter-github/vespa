@@ -100,7 +100,7 @@ ImplicitLevenshteinDfa<Traits>::match(std::string_view u8str, std::string* succe
     while (u8_reader.hasMore()) {
         const auto u8_pos_before_char = u8_reader.getPos();
         const uint32_t mch = u8_reader.getChar();
-        if (successor_out && (has_explicit_higher_out_edge(state, mch) || has_wildcard_out(state))) {
+        if (successor_out && (has_explicit_higher_out_edge(state, mch) || can_wildcard_step(state))) {
             last_state_with_higher_out = state;
             n_prefix_u8_bytes = u8_pos_before_char;
             char_after_prefix = mch;

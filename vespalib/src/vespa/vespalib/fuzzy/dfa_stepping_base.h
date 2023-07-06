@@ -55,6 +55,9 @@ struct DfaSteppingBase {
      * edit distance. It doesn't matter _how_ far beyond they are, since we have a fixed
      * maximum to consider.
      *
+     * Stepping a non-matching state S (can_match(S) == false) results in another non-
+     * matching state.
+     *
      * As an example, this is a visualization of stepping through all source characters of
      * the string "fxod" when matching the target string "food" with max edits k=1.
      * Note: the actual internal representation is logical <column#, cost> tuples, but
@@ -207,6 +210,47 @@ struct DfaSteppingBase {
     }
 
     /**
+     * Simplified version of step() which does not assemble a new state, but only checks
+     * whether _any_ mismatching character can be substituted in and still result in a
+     * potentially matching state. This is the case if the resulting state would contain
+     * _at least one_ entry (recalling that we only retain entries that are within the
+     * max number of edits).
+     *
+     * Consider using this directly instead of `can_match(step(state, UINT32_MAX))`,
+     * which has the exact same semantics, but requires computing the full (sparse)
+     * state before checking if it has any element at all. can_wildcard_step() just
+     * jumps straight to the last part.
+     */
+    [[nodiscard]] bool can_wildcard_step(const StateType& state_in) const noexcept {
+        if (state_in.empty()) {
+            return false; // by definition
+        }
+        if ((state_in.index(0) == 0) && (state_in.cost(0) < max_edits())) {
+            return true;
+        }
+        for (uint32_t i = 0; i < state_in.size(); ++i) {
+            const auto idx = state_in.index(i);
+            if (idx == _u32_str.size()) {
+                break;
+            }
+            const uint8_t sub_cost = 1;
+            auto dist = state_in.cost(i) + sub_cost;
+            // Insertion only looks at the entries already computed in the current row
+            // and always increases the cost by 1. Since we always bail out if there
+            // would have been at least one entry within max edits, we transitively know
+            // that there is no way we can get here and have insertion actually yield
+            // a match. So skip computing it entirely.
+            if ((i < state_in.size() - 1) && (state_in.index(i + 1) == idx + 1)) {
+                dist = std::min(dist, state_in.cost(i + 1) + 1);
+            }
+            if (dist <= max_edits()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Checks if the given state represents a terminal state within the max number of edits
      */
     [[nodiscard]] bool is_match(const StateType& state) const noexcept {
@@ -226,10 +270,36 @@ struct DfaSteppingBase {
         return state.last_cost();
     }
 
+    /**
+     * Returns whether the given state _may_ end up matching the target string,
+     * depending on the remaining source string characters.
+     *
+     * Note: is_match(s)  => can_match(s) is true, but
+     *       can_match(s) => is_match(s)  is false
+     */
     [[nodiscard]] bool can_match(const StateType& state) const noexcept {
         // The presence of any entries at all indicates that we may still potentially match
         // the target string if the remaining input is within the maximum number of edits.
         return !state.empty();
+    }
+
+    /**
+     * All valid character transitions from this state are those that are reachable
+     * within the max edit distance.
+     */
+    TransitionsType transitions(const StateType& state) const {
+        TransitionsType t;
+        for (size_t i = 0; i < state.size(); ++i) {
+            const auto idx = state.index(i);
+            if (idx < _u32_str.size()) {
+                t.add_char(_u32_str[idx]);
+            }
+        }
+        // We must ensure transitions are in increasing character order, so that the
+        // lowest possible higher char than any candidate char can be found with a
+        // simple "first-fit" linear scan.
+        t.sort();
+        return t;
     }
 
 };

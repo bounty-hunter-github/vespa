@@ -25,15 +25,10 @@ struct FixedSparseState {
     static_assert(MaxEdits <= UINT8_MAX/2);
 
     std::array<uint32_t, diag(MaxEdits)> indices;
-    std::array<uint8_t, diag(MaxEdits)>  costs; // elems are 1-1 with indices vector
-    uint8_t sz = 0;
+    std::array<uint8_t,  diag(MaxEdits)> costs; // elems are 1-1 with indices vector
+    uint8_t sz;
 
-    constexpr FixedSparseState() : indices(), costs(), sz(0) {
-        // Want well-defined values for unused entries so that we can use fixed-size
-        // comparisons and xxhash invocations.
-        indices.fill(UINT32_MAX);
-        costs.fill(UINT8_MAX);
-    }
+    constexpr FixedSparseState() noexcept : indices(), costs(), sz(0) {}
 
     [[nodiscard]] constexpr bool empty() const noexcept {
         return (sz == 0);
@@ -43,21 +38,21 @@ struct FixedSparseState {
         return sz;
     }
 
-    [[nodiscard]] uint32_t index(uint32_t entry_idx) const noexcept {
+    [[nodiscard]] constexpr uint32_t index(uint32_t entry_idx) const noexcept {
         return indices[entry_idx];
     }
 
-    [[nodiscard]] uint8_t cost(uint32_t entry_idx) const noexcept {
+    [[nodiscard]] constexpr uint8_t cost(uint32_t entry_idx) const noexcept {
         return costs[entry_idx];
     }
 
     // Precondition: !empty()
-    [[nodiscard]] uint32_t last_index() const noexcept {
+    [[nodiscard]] constexpr uint32_t last_index() const noexcept {
         return indices[sz - 1];
     }
 
     // Precondition: !empty()
-    [[nodiscard]] uint8_t last_cost() const noexcept {
+    [[nodiscard]] constexpr uint8_t last_cost() const noexcept {
         return costs[sz - 1];
     }
 
@@ -69,15 +64,23 @@ struct FixedSparseState {
     }
 
     constexpr bool operator==(const FixedSparseState& rhs) const noexcept {
-        // Size is implicitly compared since unused array entries have well-defined values
-        // that do not conflict with any valid values.
-        return (indices == rhs.indices && costs == rhs.costs);
+        if (sz != rhs.sz) {
+            return false;
+        }
+        return (std::equal(indices.begin(), indices.begin() + sz, rhs.indices.begin()) &&
+                std::equal(costs.begin(),   costs.begin()   + sz, rhs.costs.begin()));
     }
 
     struct hash {
-        uint64_t operator()(const FixedSparseState& s) const noexcept {
-            return (XXH3_64bits(s.indices.data(), s.indices.size() * sizeof(uint32_t)) ^
-                    XXH3_64bits(s.costs.data(), s.costs.size()));
+        size_t operator()(const FixedSparseState& s) const noexcept {
+            static_assert(std::is_same_v<uint32_t, std::decay_t<decltype(s.indices[0])>>);
+            static_assert(std::is_same_v<uint8_t,  std::decay_t<decltype(s.costs[0])>>);
+            // FIXME GCC 12.2 worse-than-useless(tm) warning false positives :I
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+            return (XXH3_64bits(s.indices.data(), s.sz * sizeof(uint32_t)) ^
+                    XXH3_64bits(s.costs.data(), s.sz));
+#pragma GCC diagnostic pop
         }
     };
 };
@@ -136,7 +139,7 @@ struct FixedMaxEditsTransitions {
 
     void sort() noexcept {
         // TODO use custom sorting networks for fixed array sizes <= 5?
-        // FIXME GCC 12.2 has a spurious compiler array bounds error here :I
+        // FIXME GCC 12.2 worse-than-useless(tm) warning false positives :I
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
         std::sort(out_u32_chars.begin(), out_u32_chars.begin() + size);

@@ -22,6 +22,7 @@ class ImplicitLevenshteinDfa
     using Base::start;
     using Base::match_edit_distance;
     using Base::step;
+    using Base::can_wildcard_step;
     using Base::is_match;
     using Base::can_match;
 public:

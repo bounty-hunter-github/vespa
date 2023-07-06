@@ -136,23 +136,6 @@ void ExplicitLevenshteinDfaImpl<MaxEdits>::dump_as_graphviz(std::ostream& os) co
     os << "}\n";
 }
 
-template <typename Traits>
-typename ExplicitLevenshteinDfaBuilder<Traits>::TransitionsType
-ExplicitLevenshteinDfaBuilder<Traits>::transitions(const StateType& state) const {
-    TransitionsType t;
-    for (size_t i = 0; i < state.size(); ++i) {
-        const auto idx = state.index(i);
-        if (idx < _u32_str.size()) {
-            t.add_char(_u32_str[idx]);
-        }
-    }
-    // We must ensure transitions are in increasing character order, so that the
-    // lowest possible higher char than any candidate char can be found with a
-    // simple "first-fit" linear scan.
-    t.sort();
-    return t;
-}
-
 namespace {
 
 template <typename StateType>
