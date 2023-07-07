@@ -57,13 +57,13 @@ struct ExplicitDfaMatcher {
         auto edge_to = node->wildcard_edge_to_or_doomed();
         return ((edge_to != DOOMED) ? &_nodes[edge_to] : nullptr);
     }
-    bool has_exact_match(StateType node, uint32_t ch) const noexcept {
+    bool has_exact_explicit_out_edge(StateType node, uint32_t ch) const noexcept {
         return node->has_exact_match(ch);
     }
     EdgeType lowest_higher_explicit_out_edge(StateType node, uint32_t ch) const noexcept {
         return node->lowest_higher_explicit_out_edge(ch);
     }
-    EdgeType smallest_out_edge(StateType node) const noexcept {
+    EdgeType smallest_explicit_out_edge(StateType node) const noexcept {
         // Out-edges are pre-ordered in increasing code point order, so the first
         // element is always the smallest possible matching character.
         assert(!node->match_out_edges().empty());

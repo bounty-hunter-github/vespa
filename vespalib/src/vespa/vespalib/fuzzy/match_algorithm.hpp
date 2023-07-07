@@ -1,6 +1,7 @@
 // Copyright Yahoo. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
 #pragma once
 
+#include "dfa_matcher.h"
 #include "levenshtein_dfa.h"
 #include "unicode_utils.h"
 #include <vespa/vespalib/text/utf8.h>
@@ -9,34 +10,50 @@
 
 namespace vespalib::fuzzy {
 
-template <typename T>
-concept DfaMatcher = requires(T a) {
-    typename T::StateType;
-    typename T::StateParamType;
-    typename T::EdgeType;
-
-    { a.start()                                                        } -> std::same_as<typename T::StateType>;
-    { a.is_match(typename T::StateType{})                              } -> std::same_as<bool>;
-    { a.can_match(typename T::StateType{})                             } -> std::same_as<bool>;
-    { a.valid_state(typename T::StateType{})                           } -> std::same_as<bool>;
-    { a.match_edit_distance(typename T::StateType{})                   } -> std::same_as<uint8_t>;
-    { a.has_higher_out_edge(typename T::StateType{}, uint32_t{})       } -> std::same_as<bool>;
-    { a.match_input(typename T::StateType{}, uint32_t{})               } -> std::same_as<typename T::StateType>;
-    { a.match_wildcard(typename T::StateType{})                        } -> std::same_as<typename T::StateType>;
-    { a.has_exact_match(typename T::StateType{}, uint32_t{})           } -> std::same_as<bool>;
-    { a.lowest_higher_explicit_out_edge(typename T::StateType{}, uint32_t{}) } -> std::same_as<typename T::EdgeType>;
-    { a.smallest_out_edge(typename T::StateType{})                     } -> std::same_as<typename T::EdgeType>;
-    { a.valid_edge(typename T::EdgeType{})                             } -> std::same_as<bool>;
-    { a.edge_to_u32char(typename T::EdgeType{})                        } -> std::same_as<uint32_t>;
-    { a.edge_to_state(typename T::StateType{}, typename T::EdgeType{}) } -> std::same_as<typename T::StateType>;
-};
-
+/**
+ * Implementation of algorithm for linear-time k-max edits string matching and successor
+ * string generation over an abstract DFA representation.
+ *
+ * The implementation is agnostic to how the underlying DFA is implemented, but requires
+ * an appropriate adapter that satisfies the DfaMatcher concept contracts.
+ */
 template <uint8_t MaxEdits>
 struct MatchAlgorithm {
     using MatchResult = LevenshteinDfa::MatchResult;
 
     static constexpr uint8_t max_edits() noexcept { return MaxEdits; }
 
+    /**
+     * Matches source string u8str against the target DFA, optionally generating the
+     * successor string iff the source string is not within the maximum number of edits
+     * of the target string.
+     *
+     * The actual match loop is very simple: we try to match the DFA as far as we can
+     * before either consuming all input (source string) characters or ending up in
+     * a non-matching state before we have consumed all input. In the former case,
+     * we may be in a matching state (consider matching "car" with the target string
+     * "cart"; after consuming all input we'll be in a matching state with 1 edit).
+     * In the latter case, the input string cannot possible match.
+     *
+     * If we end up in a matching state, all is well. We simply return a MatchResult
+     * with the number of edits the state represents.
+     *
+     * The interesting bit happens the string does _not_ match and we are asked to
+     * provide a _successor_ string that _does_ match and is strictly greater in
+     * lexicographic order.
+     *
+     * TODO more doc
+     *
+     * Both the input and successor output strings are in UTF-8 format. To avoid
+     * doing duplicate work, we keep track of the byte length of the string prefix
+     * that will be part of the successor and simply copy it verbatim instead
+     * of building the string from converted UTF-32 -> UTF-8 chars as we go.
+     *
+     * TODO we could probably also optimize the smallest suffix generation with
+     *   this when we know we can no longer insert any smaller char substitutions
+     *   and the only way to complete the string is to emit it verbatim.
+     *
+     */
     template <DfaMatcher Matcher>
     static MatchResult match(const Matcher& matcher,
                              std::string_view u8str,
@@ -112,7 +129,7 @@ struct MatchAlgorithm {
             // This is similar to what RE2's PossibleMatchRange emits to represent a UTF-8 upper bound,
             // so not without precedent.
             const auto next_char = input_at_branch + 1;
-            if (!matcher.has_exact_match(last_state_with_higher_out, next_char)) {
+            if (!matcher.has_exact_explicit_out_edge(last_state_with_higher_out, next_char)) {
                 append_utf32_char_as_utf8(successor, next_char);
                 emit_smallest_matching_suffix(matcher, wildcard_state, successor);
                 return;
@@ -124,6 +141,9 @@ struct MatchAlgorithm {
         emit_smallest_matching_suffix(matcher, matcher.edge_to_state(last_state_with_higher_out, first_highest_edge), successor);
     }
 
+    /**
+     * TODO doc
+     */
     template <DfaMatcher Matcher>
     static void emit_smallest_matching_suffix(
             const Matcher& matcher,
@@ -139,7 +159,7 @@ struct MatchAlgorithm {
                 str += '\x01';
                 state = wildcard_state;
             } else {
-                const auto smallest_out_edge = matcher.smallest_out_edge(state);
+                const auto smallest_out_edge = matcher.smallest_explicit_out_edge(state);
                 assert(matcher.valid_edge(smallest_out_edge));
                 append_utf32_char_as_utf8(str, matcher.edge_to_u32char(smallest_out_edge));
                 state = matcher.edge_to_state(state, smallest_out_edge);

@@ -73,7 +73,7 @@ struct ImplicitDfaMatcher : public DfaSteppingBase<Traits> {
     StateType match_wildcard(const StateType& state) const noexcept {
         return step(state, WILDCARD);
     }
-    bool has_exact_match(const StateType& state, uint32_t ch) const noexcept {
+    bool has_exact_explicit_out_edge(const StateType& state, uint32_t ch) const noexcept {
         return has_any_char_matching(state, [ch](uint32_t state_ch) noexcept {
             return state_ch == ch;
         });
@@ -88,7 +88,7 @@ struct ImplicitDfaMatcher : public DfaSteppingBase<Traits> {
         });
         return min_ch;
     }
-    EdgeType smallest_out_edge(const StateType& state) const noexcept {
+    EdgeType smallest_explicit_out_edge(const StateType& state) const noexcept {
         assert(!state.empty());
         uint32_t min_ch = UINT32_MAX;
         for_each_char(state, [&min_ch](uint32_t state_ch) noexcept {
