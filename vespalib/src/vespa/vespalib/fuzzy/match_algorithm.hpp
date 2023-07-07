@@ -5,8 +5,31 @@
 #include "unicode_utils.h"
 #include <vespa/vespalib/text/utf8.h>
 #include <cassert>
+#include <concepts>
 
 namespace vespalib::fuzzy {
+
+template <typename T>
+concept DfaMatcher = requires(T a) {
+    typename T::StateType;
+    typename T::StateParamType;
+    typename T::EdgeType;
+
+    { a.start()                                                        } -> std::same_as<typename T::StateType>;
+    { a.is_match(typename T::StateType{})                              } -> std::same_as<bool>;
+    { a.can_match(typename T::StateType{})                             } -> std::same_as<bool>;
+    { a.valid_state(typename T::StateType{})                           } -> std::same_as<bool>;
+    { a.match_edit_distance(typename T::StateType{})                   } -> std::same_as<uint8_t>;
+    { a.has_higher_out_edge(typename T::StateType{}, uint32_t{})       } -> std::same_as<bool>;
+    { a.match_input(typename T::StateType{}, uint32_t{})               } -> std::same_as<typename T::StateType>;
+    { a.match_wildcard(typename T::StateType{})                        } -> std::same_as<typename T::StateType>;
+    { a.has_exact_match(typename T::StateType{}, uint32_t{})           } -> std::same_as<bool>;
+    { a.lowest_higher_explicit_out_edge(typename T::StateType{}, uint32_t{}) } -> std::same_as<typename T::EdgeType>;
+    { a.smallest_out_edge(typename T::StateType{})                     } -> std::same_as<typename T::EdgeType>;
+    { a.valid_edge(typename T::EdgeType{})                             } -> std::same_as<bool>;
+    { a.edge_to_u32char(typename T::EdgeType{})                        } -> std::same_as<uint32_t>;
+    { a.edge_to_state(typename T::StateType{}, typename T::EdgeType{}) } -> std::same_as<typename T::StateType>;
+};
 
 template <uint8_t MaxEdits>
 struct MatchAlgorithm {
@@ -14,73 +37,11 @@ struct MatchAlgorithm {
 
     static constexpr uint8_t max_edits() noexcept { return MaxEdits; }
 
-    template <typename Matcher>
-    static void emit_smallest_matching_suffix(
-            const Matcher& matcher,
-            typename Matcher::StateParamType from,
-            std::string& str)
+    template <DfaMatcher Matcher>
+    static MatchResult match(const Matcher& matcher,
+                             std::string_view u8str,
+                             std::string* successor_out)
     {
-        auto state = from;
-        while (!matcher.is_match(state)) {
-            // If we can take a wildcard path, emit the smallest possible valid UTF-8 character (0x01).
-            // Otherwise, find the smallest char that can eventually lead us to a match.
-            auto wildcard_state = matcher.match_wildcard(state);
-            if (matcher.can_match(wildcard_state)) {
-                str += '\x01';
-                state = wildcard_state;
-            } else {
-                const auto smallest_out_edge = matcher.smallest_out_edge(state);
-                assert(matcher.valid_edge(smallest_out_edge));
-                append_utf32_char_as_utf8(str, matcher.edge_to_u32char(smallest_out_edge));
-                state = matcher.edge_to_state(state, smallest_out_edge);
-            }
-        }
-    }
-
-    /**
-     * Instantly backtrack to the first possible branching point in the DFA where we can
-     * choose some higher outgoing edge character value and still match the DFA. If the node
-     * has a wildcard edge, we can bump the input char by one and generate the smallest
-     * possible matching suffix to that. Otherwise, choose the smallest out edge that
-     * is greater than the input character at that location and _then_ emit the smallest
-     * matching prefix.
-     *
-     * precondition: `last_node_with_higher_out` has either a wildcard edge or a char match
-     *    edge that compares greater than `input_at_branch`.
-     */
-    template <typename Matcher>
-    static void backtrack_and_emit_greater_suffix(
-            const Matcher& matcher,
-            typename Matcher::StateParamType last_state_with_higher_out,
-            const uint32_t input_at_branch,
-            std::string& successor)
-    {
-        auto wildcard_state = matcher.match_wildcard(last_state_with_higher_out);
-        if (matcher.can_match(wildcard_state)) {
-            // `input_at_branch` may be U+10FFFF, with +1 being outside legal Unicode _code point_
-            // range but _within_ what UTF-8 can technically _encode_.
-            // We assume that successor-consumers do not care about anything except byte-wise ordering.
-            // This is similar to what RE2's PossibleMatchRange emits to represent a UTF-8 upper bound,
-            // so not without precedent.
-            const auto next_char = input_at_branch + 1;
-            if (!matcher.has_exact_match(last_state_with_higher_out, next_char)) {
-                append_utf32_char_as_utf8(successor, next_char);
-                emit_smallest_matching_suffix(matcher, wildcard_state, successor);
-                return;
-            } // else: handle exact match below (it will be found as the first higher out edge)
-        }
-        const auto first_highest_edge = matcher.lowest_higher_explicit_out_edge(last_state_with_higher_out, input_at_branch);
-        assert(matcher.valid_edge(first_highest_edge));
-        append_utf32_char_as_utf8(successor, matcher.edge_to_u32char(first_highest_edge));
-        emit_smallest_matching_suffix(matcher, matcher.edge_to_state(last_state_with_higher_out, first_highest_edge), successor);
-    }
-
-    // TODO concept
-    template <typename Matcher>
-    static LevenshteinDfa::MatchResult match(const Matcher& matcher,
-                                             std::string_view u8str,
-                                             std::string* successor_out)
-     {
         using StateType = typename Matcher::StateType;
         vespalib::Utf8Reader u8_reader(u8str.data(), u8str.size());
         uint32_t n_prefix_u8_bytes = 0;
@@ -123,6 +84,67 @@ struct MatchAlgorithm {
             emit_smallest_matching_suffix(matcher, state, *successor_out);
         }
         return MatchResult::make_mismatch(max_edits());
+    }
+
+    /**
+     * Instantly backtrack to the first possible branching point in the DFA where we can
+     * choose some higher outgoing edge character value and still match the DFA. If the node
+     * has a wildcard edge, we can bump the input char by one and generate the smallest
+     * possible matching suffix to that. Otherwise, choose the smallest out edge that
+     * is greater than the input character at that location and _then_ emit the smallest
+     * matching prefix.
+     *
+     * precondition: `last_node_with_higher_out` has either a wildcard edge or a char match
+     *    edge that compares greater than `input_at_branch`.
+     */
+    template <DfaMatcher Matcher>
+    static void backtrack_and_emit_greater_suffix(
+            const Matcher& matcher,
+            typename Matcher::StateParamType last_state_with_higher_out,
+            const uint32_t input_at_branch,
+            std::string& successor)
+    {
+        auto wildcard_state = matcher.match_wildcard(last_state_with_higher_out);
+        if (matcher.can_match(wildcard_state)) {
+            // `input_at_branch` may be U+10FFFF, with +1 being outside legal Unicode _code point_
+            // range but _within_ what UTF-8 can technically _encode_.
+            // We assume that successor-consumers do not care about anything except byte-wise ordering.
+            // This is similar to what RE2's PossibleMatchRange emits to represent a UTF-8 upper bound,
+            // so not without precedent.
+            const auto next_char = input_at_branch + 1;
+            if (!matcher.has_exact_match(last_state_with_higher_out, next_char)) {
+                append_utf32_char_as_utf8(successor, next_char);
+                emit_smallest_matching_suffix(matcher, wildcard_state, successor);
+                return;
+            } // else: handle exact match below (it will be found as the first higher out edge)
+        }
+        const auto first_highest_edge = matcher.lowest_higher_explicit_out_edge(last_state_with_higher_out, input_at_branch);
+        assert(matcher.valid_edge(first_highest_edge));
+        append_utf32_char_as_utf8(successor, matcher.edge_to_u32char(first_highest_edge));
+        emit_smallest_matching_suffix(matcher, matcher.edge_to_state(last_state_with_higher_out, first_highest_edge), successor);
+    }
+
+    template <DfaMatcher Matcher>
+    static void emit_smallest_matching_suffix(
+            const Matcher& matcher,
+            typename Matcher::StateParamType from,
+            std::string& str)
+    {
+        auto state = from;
+        while (!matcher.is_match(state)) {
+            // If we can take a wildcard path, emit the smallest possible valid UTF-8 character (0x01).
+            // Otherwise, find the smallest char that can eventually lead us to a match.
+            auto wildcard_state = matcher.match_wildcard(state);
+            if (matcher.can_match(wildcard_state)) {
+                str += '\x01';
+                state = wildcard_state;
+            } else {
+                const auto smallest_out_edge = matcher.smallest_out_edge(state);
+                assert(matcher.valid_edge(smallest_out_edge));
+                append_utf32_char_as_utf8(str, matcher.edge_to_u32char(smallest_out_edge));
+                state = matcher.edge_to_state(state, smallest_out_edge);
+            }
+        }
     }
 };
 

@@ -207,7 +207,7 @@ struct DfaSteppingBase {
      * _at least one_ entry (recalling that we only retain entries that are within the
      * max number of edits).
      *
-     * Consider using this directly instead of `can_match(step(state, UINT32_MAX))`,
+     * Consider using this directly instead of `can_match(step(state, WILDCARD))`,
      * which has the exact same semantics, but requires computing the full (sparse)
      * state before checking if it has any element at all. can_wildcard_step() just
      * jumps straight to the last part.
@@ -254,7 +254,7 @@ struct DfaSteppingBase {
      * Iff the input state represents a terminal matching state, returns the number of
      * edits required to reach the state. Otherwise, returns max edits + 1.
      */
-    [[nodiscard]] uint32_t match_edit_distance(const StateType& state) const noexcept {
+    [[nodiscard]] uint8_t match_edit_distance(const StateType& state) const noexcept {
         if (!is_match(state)) {
             return max_edits() + 1;
         }
